@@ -38,6 +38,8 @@ unzip -q nifi-toolkit-${NIFI_VERSION}-bin.zip -d /opt/
 echo "export NIFI_TOOLKIT_HOME=/opt/nifi-toolkit-${NIFI_VERSION}" >> ~/.profile
 printf "\n" >> ~/.profile
 
+source ~/.profile
+
 # If ni-fi and ni-fi registry are not installed as a service
 printf "\n" >> ~/.bashrc
 echo "alias NIFI_START=\"$NIFI_HOME/bin/nifi.sh start\"" >> ~/.bashrc
@@ -50,7 +52,21 @@ echo "alias NIFI_REGISTRY_STOP=\"$NIFI_REGISTRY_HOME/bin/nifi-registry.sh stop\"
 echo "alias NIFI_REGISTRY_RESTART=\"$NIFI_REGISTRY_HOME/bin/nifi-registry.sh restart\"" >> ~/.bashrc
 echo "alias NIFI_REGISTRY_STATUS=\"$NIFI_REGISTRY_HOME/bin/nifi-registry.sh status\"" >> ~/.bashrc
 printf "\n" >> ~/.bashrc
-source ~/.profile
+
+
+# If ni-fi and ni-fi registry are installed as a service
+#sudo $NIFI_HOME/bin/nifi.sh install nifi_service
+#echo "alias NIFI_START=\"sudo service nifi_service start\"" >> ~/.bashrc
+#echo "alias NIFI_STOP=\"sudo service nifi_service stop\"" >> ~/.bashrc
+#echo "alias NIFI_RESTART=\"sudo service nifi_service restart\"" >> ~/.bashrc
+#echo "alias NIFI_STATUS=\"sudo service nifi_service status\"" >> ~/.bashrc
+#sudo $NIFI_REGISTRY_HOME/bin/nifi-registry.sh install nifi_registry_service
+#echo "alias NIFI_REGISTRY_START=\"sudo service nifi_registry_service start\"" >> ~/.bashrc
+#echo "alias NIFI_REGISTRY_STOP=\"sudo service nifi_registry_service stop\"" >> ~/.bashrc
+#echo "alias NIFI_REGISTRY_RESTART=\"sudo service nifi_registry_service restart\"" >> ~/.bashrc
+#echo "alias NIFI_REGISTRY_STATUS=\"sudo service nifi_registry_service status\"" >> ~/.bashrc
+
+
 source ~/.bashrc
 cd ~
 rm -rf ${dirname}
