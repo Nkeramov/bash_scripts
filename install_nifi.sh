@@ -45,7 +45,8 @@ if [[ $# -eq 1 ]]; then
     cd ~ && rm -rf ${dir_path}
     # Updating envinroment variables
     echo_with_cyan_color "❯❯❯  Adding envinroment variables"
-    source ~/.profile    
+    #source ~/.profile    
+    . ~/.profile
     if ! [[ -z "${NIFI_HOME}" ]]; then
       sed -i '/^export NIFI_HOME/d' ~/.profile;
     fi
@@ -60,21 +61,25 @@ if [[ $# -eq 1 ]]; then
     echo "export NIFI_REGISTRY_HOME=/opt/nifi-registry-${NIFI_VERSION}" >> ~/.profile
     echo "export NIFI_TOOLKIT_HOME=/opt/nifi-toolkit-${NIFI_VERSION}" >> ~/.profile
     printf "\n" >> ~/.profile
-    source ~/.profile
+    #source ~/.profile
+    . ~/.profile
     
     # Updating aliases for commands (for case when NiFi and NiFi Registry are not installed as a service)
     echo_with_cyan_color "❯❯❯  Adding aliases for commands"
-    source ~/.bashrc
-    if [ "$(type -t NIFI_START)" = 'alias' ]; then
+    #source ~/.bashrc
+    #eval "$(cat ~/.bashrc | tail -n +10)"
+    #cd ~
+    . ~/.bashrc
+    if [[ "$(type -t NIFI_START)" -eq "alias" ]]; then
       sed -i '/^alias NIFI_START/d' ~/.bashrc;
     fi
-    if [ "$(type -t NIFI_STOP)" = 'alias' ]; then
+    if [[ "$(type -t NIFI_STOP)" -eq "alias" ]]; then
       sed -i '/^alias NIFI_STOP/d' ~/.bashrc;
     fi
-    if [ "$(type -t NIFI_RESTART)" = 'alias' ]; then
+    if [[ "$(type -t NIFI_RESTART)" -eq "alias" ]]; then
       sed -i '/^alias NIFI_RESTART/d' ~/.bashrc;
     fi
-    if [ "$(type -t NIFI_STATUS)" = 'alias' ]; then
+    if [[ "$(type -t NIFI_STATUS)" -eq "alias" ]]; then
       sed -i '/^alias NIFI_STATUS/d' ~/.bashrc;
     fi
     printf "\n" >> ~/.bashrc
@@ -82,16 +87,16 @@ if [[ $# -eq 1 ]]; then
     echo "alias NIFI_STOP=\"$NIFI_HOME/bin/nifi.sh stop\"" >> ~/.bashrc
     echo "alias NIFI_RESTART=\"$NIFI_HOME/bin/nifi.sh restart\"" >> ~/.bashrc
     echo "alias NIFI_STATUS=\"$NIFI_HOME/bin/nifi.sh status\"" >> ~/.bashrc
-    if [ "$(type -t NIFI_REGISTRY_START)" = 'alias' ]; then
+    if [[ "$(type -t NIFI_REGISTRY_START)" -eq "alias" ]]; then
       sed -i '/^alias NIFI_REGISTRY_START/d' ~/.bashrc;
     fi
-    if [ "$(type -t NIFI_REGISTRY_STOP)" = 'alias' ]; then
+    if [[ "$(type -t NIFI_REGISTRY_STOP)" -eq "alias" ]]; then
       sed -i '/^alias NIFI_REGISTRY_STOP/d' ~/.bashrc;
     fi
-    if [ "$(type -t NIFI_REGISTRY_RESTART)" = 'alias' ]; then
+    if [[ "$(type -t NIFI_REGISTRY_RESTART)" -eq "alias" ]]; then
       sed -i '/^alias NIFI_REGISTRY_RESTART/d' ~/.bashrc;
     fi
-    if [ "$(type -t NIFI_REGISTRY_STATUS)" = 'alias' ]; then
+    if [[ "$(type -t NIFI_REGISTRY_STATUS)" -eq "alias" ]]; then
       sed -i '/^alias NIFI_REGISTRY_STATUS/d' ~/.bashrc;
     fi
     printf "\n" >> ~/.bashrc
@@ -100,8 +105,10 @@ if [[ $# -eq 1 ]]; then
     echo "alias NIFI_REGISTRY_RESTART=\"$NIFI_REGISTRY_HOME/bin/nifi-registry.sh restart\"" >> ~/.bashrc
     echo "alias NIFI_REGISTRY_STATUS=\"$NIFI_REGISTRY_HOME/bin/nifi-registry.sh status\"" >> ~/.bashrc
     printf "\n" >> ~/.bashrc
-    source ~/.bashrc
+    #source ~/.bashrc
     #eval "$(cat ~/.bashrc | tail -n +10)"
+    #cd ~
+    . ~/.bashrc
 
     # Updating NiFi bootstrap.conf settings
     nifi_bootstrap_filename="$NIFI_HOME/conf/bootstrap.conf"
@@ -138,7 +145,7 @@ if [[ $# -eq 1 ]]; then
     key_name="java.arg.58"
     key_value="-Dcalcite.default.charset=utf-8"
     if ! grep -R "^[#]*\s*${key_name}=.*" $nifi_bootstrap_filename > /dev/null; then
-      echo "Added setting '${key_name}' with value '${nifi_bootstrap_filename}'"
+      echo "Added setting '${key_name}' with value '${key_value}'"
       printf "\n" >> $key_value
       echo "$key_name=$key_value" >> $nifi_bootstrap_filename
     else
