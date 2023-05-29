@@ -1,5 +1,4 @@
-#!/usr/bin/env bash
-
+#!/bin/bash -i
 
 echo_with_red_color() {
   echo -e '\e[1;31m'$1'\e[m';
@@ -45,8 +44,7 @@ if [[ $# -eq 1 ]]; then
     cd ~ && rm -rf ${dir_path}
     # Updating envinroment variables
     echo_with_cyan_color "❯❯❯  Adding envinroment variables"
-    #source ~/.profile    
-    . ~/.profile
+    source ~/.profile
     if ! [[ -z "${NIFI_HOME}" ]]; then
       sed -i '/^export NIFI_HOME/d' ~/.profile;
     fi
@@ -61,14 +59,9 @@ if [[ $# -eq 1 ]]; then
     echo "export NIFI_REGISTRY_HOME=/opt/nifi-registry-${NIFI_VERSION}" >> ~/.profile
     echo "export NIFI_TOOLKIT_HOME=/opt/nifi-toolkit-${NIFI_VERSION}" >> ~/.profile
     printf "\n" >> ~/.profile
-    #source ~/.profile
-    . ~/.profile
-    
+    source ~/.profile
     # Updating aliases for commands (for case when NiFi and NiFi Registry are not installed as a service)
     echo_with_cyan_color "❯❯❯  Adding aliases for commands"
-    #source ~/.bashrc
-    #eval "$(cat ~/.bashrc | tail -n +10)"
-    #cd ~
     . ~/.bashrc
     if [[ "$(type -t NIFI_START)" -eq "alias" ]]; then
       sed -i '/^alias NIFI_START/d' ~/.bashrc;
@@ -105,10 +98,6 @@ if [[ $# -eq 1 ]]; then
     echo "alias NIFI_REGISTRY_RESTART=\"$NIFI_REGISTRY_HOME/bin/nifi-registry.sh restart\"" >> ~/.bashrc
     echo "alias NIFI_REGISTRY_STATUS=\"$NIFI_REGISTRY_HOME/bin/nifi-registry.sh status\"" >> ~/.bashrc
     printf "\n" >> ~/.bashrc
-    #source ~/.bashrc
-    #eval "$(cat ~/.bashrc | tail -n +10)"
-    #cd ~
-    . ~/.bashrc
 
     # Updating NiFi bootstrap.conf settings
     nifi_bootstrap_filename="$NIFI_HOME/conf/bootstrap.conf"
@@ -153,8 +142,6 @@ if [[ $# -eq 1 ]]; then
       sed -i "s/^[#]*\s*${key_name}=.*/$key_name=$key_value/" $nifi_bootstrap_filename
     fi
 
-
-
     # Updading NiFi nifi.properties settings
     nifi_properties_filename="$NIFI_HOME/conf/nifi.properties"
     echo_with_cyan_color "❯❯❯  Updating NiFi nifi.properties (${nifi_properties_filename})"
@@ -162,7 +149,6 @@ if [[ $# -eq 1 ]]; then
     nifi_banner_text="LOCALHOST"
     sed -i "s/^[#]*\s*nifi.ui.banner.text=.*/nifi.ui.banner.text=${nifi_banner_text}/" $nifi_properties_filename
     echo "Updated setting 'nifi.ui.banner.text' to value '${nifi_banner_text}'"
-    
     nifi_sensitive_key=$(openssl rand -hex 20)
     # Change sensitive key
     eval "$NIFI_HOME/bin/nifi.sh set-sensitive-properties-key ${nifi_sensitive_key} &> /dev/null"
@@ -192,7 +178,7 @@ if [[ $# -eq 1 ]]; then
       else
         echo_with_red_color "ERROR, NiFi not started"
     fi
-    
+    exec bash
     #echo "To get the username and password use the command: grep Generated $NIFI_HOME/logs/nifi-app*log"
   else
 		echo_with_red_color "ERROR, passed version did not match version regex"
