@@ -45,6 +45,10 @@ if [[ $# -eq 1 ]]; then
     # Updating envinroment variables
     echo_with_cyan_color "❯❯❯  Adding envinroment variables"
     source ~/.profile
+    # Removing existed NiFi environment variables
+    if ! [[ -z "${NIFI_VERSION}" ]]; then
+      sed -i '/^export NIFI_VERSION/d' ~/.profile;
+    fi
     if ! [[ -z "${NIFI_HOME}" ]]; then
       sed -i '/^export NIFI_HOME/d' ~/.profile;
     fi
@@ -55,6 +59,8 @@ if [[ $# -eq 1 ]]; then
       sed -i '/^export NIFI_TOOLKIT_HOME/d' ~/.profile;
     fi
     printf "\n" >> ~/.profile
+    # Adding new environment variables
+    echo "export NIFI_VERSION=${NIFI_VERSION}" >> ~/.profile
     echo "export NIFI_HOME=/opt/nifi-${NIFI_VERSION}" >> ~/.profile
     echo "export NIFI_REGISTRY_HOME=/opt/nifi-registry-${NIFI_VERSION}" >> ~/.profile
     echo "export NIFI_TOOLKIT_HOME=/opt/nifi-toolkit-${NIFI_VERSION}" >> ~/.profile
@@ -63,6 +69,7 @@ if [[ $# -eq 1 ]]; then
     # Updating aliases for commands (for case when NiFi and NiFi Registry are not installed as a service)
     echo_with_cyan_color "❯❯❯  Adding aliases for commands"
     . ~/.bashrc
+    # Removing existed NiFi command aliases
     if [[ "$(type -t NIFI_START)" -eq "alias" ]]; then
       sed -i '/^alias NIFI_START/d' ~/.bashrc;
     fi
@@ -76,6 +83,7 @@ if [[ $# -eq 1 ]]; then
       sed -i '/^alias NIFI_STATUS/d' ~/.bashrc;
     fi
     printf "\n" >> ~/.bashrc
+    # Adding new command aliases
     echo "alias NIFI_START=\"$NIFI_HOME/bin/nifi.sh start\"" >> ~/.bashrc
     echo "alias NIFI_STOP=\"$NIFI_HOME/bin/nifi.sh stop\"" >> ~/.bashrc
     echo "alias NIFI_RESTART=\"$NIFI_HOME/bin/nifi.sh restart\"" >> ~/.bashrc
