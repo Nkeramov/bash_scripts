@@ -111,7 +111,9 @@ if [[ $# -eq 1 ]]; then
     nifi_bootstrap_filename="$NIFI_HOME/conf/bootstrap.conf"
     echo_with_cyan_color "❯❯❯  Updating NiFi bootstrap.conf (${nifi_bootstrap_filename})"
     # Change default JVM memory settings
+    # Minimum (or starting) amount of memory dedicated to the JVM heap space
     nifi_min_memory="2G"
+    # Maximum amount of memory allowed to be consumed by the JVM
     nifi_max_memory="4G"
     sed -i "s/^[#]*\s*java.arg.2=.*/java.arg.2=-Xms${nifi_min_memory}/" $nifi_bootstrap_filename
     sed -i "s/^[#]*\s*java.arg.3=.*/java.arg.3=-Xmx${nifi_max_memory}/" $nifi_bootstrap_filename
