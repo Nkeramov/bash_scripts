@@ -118,6 +118,15 @@ if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
   fi
   if ! [[ -z "${NIFI_TOOLKIT_PROPS_FILE}" ]]; then
     sed -i '/^export NIFI_TOOLKIT_PROPS_FILE/d' ~/.profile;
+  
+  NIFI_INPUT="/opt/nifi-${NIFI_VERSION}/input"
+  NIFI_OUTPUT="/opt/nifi-${NIFI_VERSION}/output"
+  fi
+    if ! [[ -z "${NIFI_INPUT}" ]]; then
+    sed -i '/^export NIFI_INPUT/d' ~/.profile;
+  fi
+    if ! [[ -z "${NIFI_OUTPUT}" ]]; then
+    sed -i '/^export NIFI_OUTPUT/d' ~/.profile;
   fi
 
   printf "\n" >> ~/.profile
@@ -130,6 +139,11 @@ if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
   echo "export NIFI_PROPS_FILE=/opt/nifi-${NIFI_VERSION}/conf/nifi.properties" >> ~/.profile
   echo "export NIFI_REGISTRY_PROPS_FILE=/opt/nifi-registry-${NIFI_VERSION}/conf/nifi-registry.properties" >> ~/.profile
   echo "export NIFI_TOOLKIT_PROPS_FILE=/opt/nifi-toolkit-${NIFI_VERSION}/conf/cli.properties" >> ~/.profile
+
+  echo "export NIFI_INPUT=${NIFI_INPUT}" >> ~/.profile
+  echo "export NIFI_OUTPUT=${NIFI_OUTPUT}" >> ~/.profile
+  mkdir ${NIFI_INPUT}
+  mkdir ${NIFI_OUTPUT}
 
   printf "\n" >> ~/.profile
   source ~/.profile
