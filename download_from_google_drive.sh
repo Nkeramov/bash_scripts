@@ -1,4 +1,7 @@
 #!/bin/bash
+
+[ -n "$BASH_VERSION" ] || { echo "please run this script with bash"; exit 1; }
+
 if [ $# != 2 ]; then
 	echo "Usage: googledown.sh ID save_name"
 	exit 0

@@ -1,3 +1,7 @@
+#!/bin/bash
+
+[ -n "$BASH_VERSION" ] || { echo "Please run this script with bash"; exit 1; }
+
 if type -p java > /dev/null; then
     echo "Found java executable in PATH" >&2
     JAVA_CMD=`which java`
