@@ -2,45 +2,33 @@
 
 [ -n "$BASH_VERSION" ] || { echo "Please run this script with bash"; exit 1; }
 
-echo_with_red_color() {
-  echo -e '\e[1;31m'$1'\e[m';
-}
-
-echo_with_cyan_color() {
-  echo -e '\e[1;36m'$1'\e[m';
-}
+source 'bash_color.sh'
 
 # 1 - value to search for
 # 2 - value to replace
 # 3 - file to perform replacement inline
 prop_replace () {
-  target_file=${3:-${nifi_props_file}}
-  echo 'replacing target file ' ${target_file}
-  sed -i -e "s|^$1=.*$|$1=$2|"  ${target_file}
+  echo "replacing target file $3"
+  sed -i -e "s|^$1=.*$|$1=$2|" $3
 }
 
 prop_update(){
-  target_file=${3:-${nifi_props_file}}
-  echo "grep '$1'" ${target_file}
-  if grep -q $1 ${target_file}
+  echo "grep '$1' $3"
+  if grep -q $1 $3
   then
     echo "replace"
     prop_replace "$1" "$2"
   else
     echo "add"
-    echo "$1=$2" >> ${target_file}
+    echo "$1=$2" >> $3
   fi
   echo "end"
 }
 
-
 uncomment() {
-	target_file=${2}
-	echo "Uncommenting ${target_file}"
-	sed -i -e "s|^\#$1|$1|" ${target_file}
+  echo "Uncommenting $2"
+  sed -i -e "s|^\#$1|$1|" $2
 }
-
-
 
 download_cmd="wget"
 download_threads_count=5
@@ -52,21 +40,22 @@ while [[ "$#" -gt 0 ]]
       -v|--version) NIFI_VERSION="$2"; shift;;
       -l|--login) NIFI_LOGIN="$2"; shift;;
       -p|--password) NIFI_PASSWORD="$2"; shift;;
-      -d|--dir) NIFI_PATH="$2"; shift;;
+      -d|--dir) NIFI_INSTALL_PATH="$2"; shift;;
     esac
     shift
 done
 
 
-if [ -v ${VERSION+x} ]; then
+if [ -v ${NIFI_VERSION+x} ]; then
   NIFI_VERSION="$(wget -q -O- -T10 https://nifi.apache.org/download.html | grep -oE '(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)' | head -n1)"
   echo "NiFi version not set, ${NIFI_VERSION} will be used instead"
 else
   echo "NiFi version set to ${NIFI_VERSION}"
 fi
+
 VERSION_REGEX="^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
 if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
-  
+
   # Selecting download command
   if ! command -v aria2c &> /dev/null
   then
@@ -80,21 +69,21 @@ if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
   cd ~
   mkdir ${dir_path}
   cd ${dir_path}
-  echo "current dir is $(pwd)"
+  echo "working dir is $(pwd)"
   # Downloading and extracting NiFi, NiFi Registry, NiFi Toolkit
-  echo_with_cyan_color "❯❯❯  Downloading and extracting Apache NiFi ${NIFI_VERSION}"
+  echo_with_bold_cyan "❯❯❯  Downloading and extracting Apache NiFi ${NIFI_VERSION}"
   eval "${download_cmd} https://dlcdn.apache.org/nifi/${NIFI_VERSION}/nifi-${NIFI_VERSION}-bin.zip"
-  unzip -q nifi-${NIFI_VERSION}-bin.zip -d /opt/
-  echo_with_cyan_color "❯❯❯  Downloading and extracting Apache NiFi Registry ${NIFI_VERSION}"
+  unzip -q nifi-${NIFI_VERSION}-bin.zip -d ${NIFI_INSTALL_PATH}/
+  echo_with_bold_cyan "❯❯❯  Downloading and extracting Apache NiFi Registry ${NIFI_VERSION}"
   eval "${download_cmd} https://dlcdn.apache.org/nifi/$NIFI_VERSION/nifi-registry-${NIFI_VERSION}-bin.zip"
-  unzip -q nifi-registry-${NIFI_VERSION}-bin.zip -d /opt/
-  echo_with_cyan_color "❯❯❯  Downloading and extracting Apache NiFi Toolkit ${NIFI_VERSION}"
+  unzip -q nifi-registry-${NIFI_VERSION}-bin.zip -d ${NIFI_INSTALL_PATH}/
+  echo_with_bold_cyan "❯❯❯  Downloading and extracting Apache NiFi Toolkit ${NIFI_VERSION}"
   eval "${download_cmd} https://dlcdn.apache.org/nifi/$NIFI_VERSION/nifi-toolkit-${NIFI_VERSION}-bin.zip"
-  unzip -q nifi-toolkit-${NIFI_VERSION}-bin.zip -d /opt/
+  unzip -q nifi-toolkit-${NIFI_VERSION}-bin.zip -d ${NIFI_INSTALL_PATH}/
   # Removing temp dir
   cd ~ && rm -rf ${dir_path}
   # Updating envinroment variables
-  echo_with_cyan_color "❯❯❯  Adding envinroment variables"
+  echo_with_bold_cyan "❯❯❯  Adding envinroment variables"
   source ~/.profile
   # Removing existed NiFi environment variables
   if ! [[ -z "${NIFI_VERSION}" ]]; then
@@ -121,8 +110,6 @@ if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
   if ! [[ -z "${NIFI_TOOLKIT_PROPS_FILE}" ]]; then
     sed -i '/^export NIFI_TOOLKIT_PROPS_FILE/d' ~/.profile;
   
-  NIFI_INPUT="/opt/nifi-${NIFI_VERSION}/input"
-  NIFI_OUTPUT="/opt/nifi-${NIFI_VERSION}/output"
   fi
     if ! [[ -z "${NIFI_INPUT}" ]]; then
     sed -i '/^export NIFI_INPUT/d' ~/.profile;
@@ -134,23 +121,26 @@ if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
   printf "\n" >> ~/.profile
   # Adding new environment variables
   echo "export NIFI_VERSION=${NIFI_VERSION}" >> ~/.profile
-  echo "export NIFI_HOME=/opt/nifi-${NIFI_VERSION}" >> ~/.profile
-  echo "export NIFI_REGISTRY_HOME=/opt/nifi-registry-${NIFI_VERSION}" >> ~/.profile
-  echo "export NIFI_TOOLKIT_HOME=/opt/nifi-toolkit-${NIFI_VERSION}" >> ~/.profile
-  echo "export NIFI_BOOTSTRAP_FILE=/opt/nifi-${NIFI_VERSION}/bootstrap.conf" >> ~/.profile
-  echo "export NIFI_PROPS_FILE=/opt/nifi-${NIFI_VERSION}/conf/nifi.properties" >> ~/.profile
-  echo "export NIFI_REGISTRY_PROPS_FILE=/opt/nifi-registry-${NIFI_VERSION}/conf/nifi-registry.properties" >> ~/.profile
-  echo "export NIFI_TOOLKIT_PROPS_FILE=/opt/nifi-toolkit-${NIFI_VERSION}/conf/cli.properties" >> ~/.profile
+  echo "export NIFI_HOME=${NIFI_INSTALL_PATH}/nifi-${NIFI_VERSION}" >> ~/.profile
+  echo "export NIFI_REGISTRY_HOME=${NIFI_INSTALL_PATH}/nifi-registry-${NIFI_VERSION}" >> ~/.profile
+  echo "export NIFI_TOOLKIT_HOME=${NIFI_INSTALL_PATH}/nifi-toolkit-${NIFI_VERSION}" >> ~/.profile
+  echo "export NIFI_BOOTSTRAP_FILE=${NIFI_INSTALL_PATH}/nifi-${NIFI_VERSION}/bootstrap.conf" >> ~/.profile
+  echo "export NIFI_PROPS_FILE=${NIFI_INSTALL_PATH}/nifi-${NIFI_VERSION}/conf/nifi.properties" >> ~/.profile
+  echo "export NIFI_REGISTRY_PROPS_FILE=${NIFI_INSTALL_PATH}/nifi-registry-${NIFI_VERSION}/conf/nifi-registry.properties" >> ~/.profile
+  echo "export NIFI_TOOLKIT_PROPS_FILE=${NIFI_INSTALL_PATH}/nifi-toolkit-${NIFI_VERSION}/conf/cli.properties" >> ~/.profile
+
+  NIFI_INPUT="${NIFI_INSTALL_PATH}/nifi-${NIFI_VERSION}/input"
+  NIFI_OUTPUT="${NIFI_INSTALL_PATH}/nifi-${NIFI_VERSION}/output"
+
 
   echo "export NIFI_INPUT=${NIFI_INPUT}" >> ~/.profile
   echo "export NIFI_OUTPUT=${NIFI_OUTPUT}" >> ~/.profile
-  mkdir ${NIFI_INPUT}
-  mkdir ${NIFI_OUTPUT}
+  mkdir -p ${NIFI_INPUT} ${NIFI_OUTPUT}
 
   printf "\n" >> ~/.profile
   source ~/.profile
   # Updating aliases for commands (for case when NiFi and NiFi Registry are not installed as a service)
-  echo_with_cyan_color "❯❯❯  Adding aliases for commands"
+  echo_with_bold_cyan "❯❯❯  Adding aliases for commands"
   . ~/.bashrc
   # Removing existed NiFi command aliases
   if [[ "$(type -t NIFI_START)" -eq "alias" ]]; then
@@ -192,7 +182,7 @@ if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
 
   # Updating NiFi bootstrap.conf settings
   nifi_bootstrap_filename="$NIFI_HOME/conf/bootstrap.conf"
-  echo_with_cyan_color "❯❯❯  Updating NiFi bootstrap.conf (${nifi_bootstrap_filename})"
+  echo_with_bold_cyan "❯❯❯  Updating NiFi bootstrap.conf (${nifi_bootstrap_filename})"
   # Change default JVM memory settings
   # Minimum (or starting) amount of memory dedicated to the JVM heap space
   nifi_min_memory="2G"
@@ -200,68 +190,65 @@ if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
   nifi_max_memory="4G"
   sed -i "s/^[#]*\s*java.arg.2=.*/java.arg.2=-Xms${nifi_min_memory}/" $nifi_bootstrap_filename
   sed -i "s/^[#]*\s*java.arg.3=.*/java.arg.3=-Xmx${nifi_max_memory}/" $nifi_bootstrap_filename
-  echo "Updated JVM settings '-Xms' to '${nifi_min_memory}' and '-Xmx' to '${nifi_max_memory}'"
+  echo_with_italics "Updated JVM settings '-Xms' to '${nifi_min_memory}' and '-Xmx' to '${nifi_max_memory}'"
   # Change default JVM timezone (parameter may be absent)
   key_name="java.arg.8"
   key_value="-Duser.timezone=Etc/UTC"
   if ! grep -R "^[#]*\s*${key_name}=.*" $nifi_bootstrap_filename > /dev/null; then
-    echo "Added setting '${key_name}' with value '${key_value}'"
+    echo_with_italics "Added setting '${key_name}' with value '${key_value}'"
     printf "\n" >> $nifi_bootstrap_filename
     echo "$key_name=$key_value" >> $nifi_bootstrap_filename
   else
-    echo "Updated setting '${key_name}' to value '${key_value}'"
+    echo_with_italics "Updated setting '${key_name}' to value '${key_value}'"
     sed -i "s/^[#]*\s*${key_name}=.*/$key_name=$key_value/" $nifi_bootstrap_filename
   fi
   # Change default JVM encodings (parameter may be absent)
   key_name="java.arg.57"
   key_value="-Dfile.encoding=UTF8"
   if ! grep -R "^[#]*\s*${key_name}=.*" $nifi_bootstrap_filename > /dev/null; then
-    echo "Added setting '${key_name}' with value '${key_value}'"
+    echo_with_italics "Added setting '${key_name}' with value '${key_value}'"
     printf "\n" >> $nifi_bootstrap_filename
     echo "$key_name=$key_value" >> $nifi_bootstrap_filename
   else
-    echo "Updated setting '${key_name}' to value '${key_value}'"
+    echo_with_italics "Updated setting '${key_name}' to value '${key_value}'"
     sed -i "s/^[#]*\s*${key_name}=.*/$key_name=$key_value/" $nifi_bootstrap_filename
   fi
   # Fixed encodings for cyrillic symbols (parameter may be absent)
   key_name="java.arg.58"
   key_value="-Dcalcite.default.charset=utf-8"
   if ! grep -R "^[#]*\s*${key_name}=.*" $nifi_bootstrap_filename > /dev/null; then
-    echo "Added setting '${key_name}' with value '${key_value}'"
-    printf "\n" >> $key_value
+    echo_with_italics "Added setting '${key_name}' with value '${key_value}'"
+    printf "\n" >> $nifi_bootstrap_filename
     echo "$key_name=$key_value" >> $nifi_bootstrap_filename
   else
-    echo "Updated setting '${key_name}' to value '${key_value}'"
+    echo_with_italics "Updated setting '${key_name}' to value '${key_value}'"
     sed -i "s/^[#]*\s*${key_name}=.*/$key_name=$key_value/" $nifi_bootstrap_filename
   fi
 
   # Updading NiFi nifi.properties settings
   nifi_properties_filename="$NIFI_HOME/conf/nifi.properties"
-  echo_with_cyan_color "❯❯❯  Updating NiFi nifi.properties (${nifi_properties_filename})"
+  echo_with_bold_cyan "❯❯❯  Updating NiFi nifi.properties (${nifi_properties_filename})"
   # Change default UI banner text
   nifi_banner_text="LOCALHOST"
   sed -i "s/^[#]*\s*nifi.ui.banner.text=.*/nifi.ui.banner.text=${nifi_banner_text}/" $nifi_properties_filename
-  echo "Updated setting 'nifi.ui.banner.text' to value '${nifi_banner_text}'"
+  echo_with_italics "Updated setting 'nifi.ui.banner.text' to value '${nifi_banner_text}'"
   nifi_sensitive_key=$(openssl rand -hex 20)
   # Change sensitive key
   eval "$NIFI_HOME/bin/nifi.sh set-sensitive-properties-key ${nifi_sensitive_key} &> /dev/null"
-  echo "Updated setting 'nifi.sensitive.props.key' to value '${nifi_sensitive_key}'"
+  echo_with_italics "Updated setting 'nifi.sensitive.props.key' to value '${nifi_sensitive_key}'"
   if [ -v ${NIFI_LOGIN+x} ]; then
     NIFI_LOGIN="nifi"
-    echo "NiFi user login not set, '${NIFI_LOGIN}' will be used instead"
+    echo_with_italics "NiFi user login not set, '${NIFI_LOGIN}' will be used instead"
   else
-    echo "NiFi user login set to ${NIFI_LOGIN}"
+    echo_with_italics "NiFi user login set to ${NIFI_LOGIN}"
   fi
 
   if [ -v ${NIFI_PASSWORD+x} ]; then
     NIFI_PASSWORD="nifi_password"
-    echo "NiFi user password not set, '${NIFI_PASSWORD}' will be used instead"
+    echo_with_italics "NiFi user password not set, '${NIFI_PASSWORD}' will be used instead"
   else
-    echo "NiFi user passsword set to ${NIFI_PASSWORD}"
+    echo_with_italics "NiFi user passsword set to ${NIFI_PASSWORD}"
   fi
-  #NIFI_PASSWORD="nifi_password"
-  #echo "NiFi Login = ${NIFI_LOGIN}"
-  #echo "NiFi Passsword = ${NIFI_PASSWORD}"
   eval "$NIFI_HOME/bin/nifi.sh set-single-user-credentials ${NIFI_LOGIN} ${NIFI_PASSWORD} &> /dev/null"
   # Start NiFi and wait
   eval "$NIFI_HOME/bin/nifi.sh start &> /dev/null"
@@ -278,12 +265,12 @@ if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
   done
   printf "\n"
   if [ "$k" -le $kmax ]; then
-      echo_with_cyan_color "❯❯❯  NiFi started at ${nifi_web_interface_link}/nifi/"
+      echo_with_bold_cyan "❯❯❯  NiFi started at ${nifi_web_interface_link}/nifi/"
     else
-      echo_with_red_color "ERROR, NiFi not started"
+      echo_with_bold_red "ERROR, NiFi not started"
   fi
   exec bash
   #echo "To get the username and password use the command: grep Generated $NIFI_HOME/logs/nifi-app*log"
 else
-  echo_with_red_color "ERROR, passed version did not match version regex"
+  echo_with_bold_red "ERROR, passed version did not match version regex"
 fi
