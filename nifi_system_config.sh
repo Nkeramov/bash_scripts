@@ -21,13 +21,15 @@ fi
 #echo "alias NIFI_REGISTRY_STATUS=\"sudo service nifi_registry_service status\"" >> ~/.bashrc
 
 printf "\n" >> /etc/security/limits.conf
+# set the maximum number of file descriptors
 printf "* hard nofile 50000\n" >> /etc/security/limits.conf
 printf "* soft nofile 50000\n" >> /etc/security/limits.conf
+# set the maximum number of multi-threaded processes
 printf "* hard nproc 10000\n" >> /etc/security/limits.conf
 printf "* soft nproc 10000\n" >> /etc/security/limits.conf
 
 sysctl -w net.ipv4.ip_local_port_range="10000 65000"
 
-
+# setting up the use of swap only as a last resort
 printf "\n" >> /etc/sysctl.conf
-printf "vm.swappiness = 0\n" >> /etc/sysctl.conf
+printf "vm.swappiness = 0" >> /etc/sysctl.conf
