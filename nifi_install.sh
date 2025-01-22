@@ -262,7 +262,7 @@ if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
   nifi_web_interface_link=""
   while [[ $k -le $kmax ]] && [[ "$nifi_web_interface_link" = "" ]]
   do
-          nifi_web_interface_link=$(grep "org.apache.nifi.web.server.JettyServer https" $NIFI_HOME/logs/nifi-app*.log | tail -1 | grep -Eo '(http|https)://[^/"]+')
+          nifi_web_interface_link=$(grep "Started Server on" nifi-app*.log | tail -1 | grep -Eo '(http|https)://[^/"]+')
           echo -n '.'
           ((k=k+1))
           sleep 1
