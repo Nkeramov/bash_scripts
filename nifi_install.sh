@@ -30,6 +30,10 @@ uncomment() {
   sed -i -e "s|^\#$1|$1|" $2
 }
 
+log() { echo  $(date "+%Y-%m-%d %H:%m:%S") $1; }
+log_info() { log "INFO: $1"; }
+log_error() { log "ERROR: $1"; exit 1; }
+
 download_cmd="wget"
 download_threads_count=5
 
@@ -48,9 +52,9 @@ done
 
 if [ -v ${NIFI_VERSION+x} ]; then
   NIFI_VERSION="$(wget -q -O- -T10 https://nifi.apache.org/download.html | grep -oE '(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)' | head -n1)"
-  echo "NiFi version not set, ${NIFI_VERSION} will be used instead"
+  echo "NiFi version not passed, ${NIFI_VERSION} will be used"
 else
-  echo "NiFi version set to ${NIFI_VERSION}"
+  echo "NiFi version ${NIFI_VERSION} will be used"
 fi
 
 VERSION_REGEX="^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
@@ -72,13 +76,13 @@ if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
   echo "working dir is $(pwd)"
   # Downloading and extracting NiFi, NiFi Registry, NiFi Toolkit
   echo_with_bold_cyan "❯❯❯  Downloading and extracting Apache NiFi ${NIFI_VERSION}"
-  eval "${download_cmd} https://dlcdn.apache.org/nifi/${NIFI_VERSION}/nifi-${NIFI_VERSION}-bin.zip"
+  eval "${download_cmd} https://archive.apache.org/dist/nifi/${NIFI_VERSION}/nifi-${NIFI_VERSION}-bin.zip"
   unzip -q nifi-${NIFI_VERSION}-bin.zip -d ${NIFI_INSTALL_PATH}/
   echo_with_bold_cyan "❯❯❯  Downloading and extracting Apache NiFi Registry ${NIFI_VERSION}"
-  eval "${download_cmd} https://dlcdn.apache.org/nifi/$NIFI_VERSION/nifi-registry-${NIFI_VERSION}-bin.zip"
+  eval "${download_cmd} https://archive.apache.org/dist/nifi/$NIFI_VERSION/nifi-registry-${NIFI_VERSION}-bin.zip"
   unzip -q nifi-registry-${NIFI_VERSION}-bin.zip -d ${NIFI_INSTALL_PATH}/
   echo_with_bold_cyan "❯❯❯  Downloading and extracting Apache NiFi Toolkit ${NIFI_VERSION}"
-  eval "${download_cmd} https://dlcdn.apache.org/nifi/$NIFI_VERSION/nifi-toolkit-${NIFI_VERSION}-bin.zip"
+  eval "${download_cmd} https://archive.apache.org/dist/nifi/$NIFI_VERSION/nifi-toolkit-${NIFI_VERSION}-bin.zip"
   unzip -q nifi-toolkit-${NIFI_VERSION}-bin.zip -d ${NIFI_INSTALL_PATH}/
   # Removing temp dir
   cd ~ && rm -rf ${dir_path}
@@ -109,7 +113,7 @@ if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
   fi
   if ! [[ -z "${NIFI_TOOLKIT_PROPS_FILE}" ]]; then
     sed -i '/^export NIFI_TOOLKIT_PROPS_FILE/d' ~/.profile;
-  
+
   fi
     if ! [[ -z "${NIFI_INPUT}" ]]; then
     sed -i '/^export NIFI_INPUT/d' ~/.profile;
@@ -272,5 +276,5 @@ if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
   exec bash
   #echo "To get the username and password use the command: grep Generated $NIFI_HOME/logs/nifi-app*log"
 else
-  echo_with_bold_red "ERROR, passed version did not match version regex"
+  echo_with_bold_red "ERROR, passed NiFi version does not match the version regex"
 fi
