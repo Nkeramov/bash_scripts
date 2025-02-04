@@ -30,6 +30,11 @@ uncomment() {
   sed -i -e "s|^\#$1|$1|" $2
 }
 
+generate_random_string() {
+  local length="$1"
+  openssl rand -base64 "$((length * 3 / 4 + 1))" | tr -dc A-Za-z0-9_ | head -c "$length"
+}
+
 log() { echo  $(date "+%Y-%m-%d %H:%m:%S") $1; }
 log_info() { log "INFO: $1"; }
 log_error() { log "ERROR: $1"; exit 1; }
@@ -41,22 +46,41 @@ download_threads_count=5
 while [[ "$#" -gt 0 ]]
   do
     case $1 in
-      -v|--version) NIFI_VERSION="$2"; shift;;
-      -l|--login) NIFI_LOGIN="$2"; shift;;
-      -p|--password) NIFI_PASSWORD="$2"; shift;;
-      -d|--dir) NIFI_INSTALL_PATH="$2"; shift;;
+      -v|--version) NIFI_VERSION_ARG="$2"; shift;;
+      -l|--login) NIFI_LOGIN_ARG="$2"; shift;;
+      -p|--password) NIFI_PASSWORD_ARG="$2"; shift;;
+      -d|--dir) NIFI_INSTALL_PATH_ARG="$2"; shift;;
     esac
     shift
 done
 
 
-if [ -v ${NIFI_VERSION+x} ]; then
+if [ -v ${NIFI_VERSION_ARG+x} ]; then
   NIFI_VERSION="$(wget -q -O- -T10 https://nifi.apache.org/download.html | grep -oE '(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)' | head -n1)"
-  echo "NiFi version not passed, ${NIFI_VERSION} will be used"
+  echo_with_italics "NiFi version not passed, ${NIFI_VERSION} will be used"
 else
-  echo "NiFi version ${NIFI_VERSION} will be used"
+  NIFI_VERSION=NIFI_VERSION_ARG
+  echo_with_italics "NiFi version ${NIFI_VERSION_ARG} will be used"
 fi
 
+if [ -v ${NIFI_LOGIN_ARG+x} ]; then
+  NIFI_LOGIN_ARG="nifi"
+  echo_with_italics "NiFi user login not set, '${NIFI_LOGIN_ARG}' will be used instead"
+else
+  echo_with_italics "NiFi user login wiil be set to ${NIFI_LOGIN_ARG}"
+fi
+
+if [ -v ${NIFI_PASSWORD_ARG+x} ]; then
+  NIFI_PASSWORD_ARG=$(generate_random_string 16)
+  echo_with_italics "NiFi user password not set, '${NIFI_PASSWORD_ARG}' will be used instead"
+else
+  if [ ${#NIFI_PASSWORD_ARG} -lt 12 ]; then
+    echo "Error: Password must be at least 12 characters long."
+    exit 1
+  else
+    echo_with_italics "NiFi user passsword will be set to ${NIFI_PASSWORD_ARG}"
+  fi
+fi
 VERSION_REGEX="^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
 if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
 
@@ -68,22 +92,22 @@ if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
     echo "aria2c is installed and will be used for downloads"
     download_cmd="aria2c -x${download_threads_count} --summary-interval=0"
   fi
-  # Creating temp dir
-  dir_path="$(uuidgen)"
-  cd ~
-  mkdir ${dir_path}
-  cd ${dir_path}
-  echo "working dir is $(pwd)"
+  # Saving current work dir
+  pushd -n $(pwd)
+  # Creating temp work dir
+  dir_path="$HOME/$(uuidgen)"
+  mkdir ${dir_path} && cd ${dir_path}
+  echo "temp working dir is $(pwd)"
   # Downloading and extracting NiFi, NiFi Registry, NiFi Toolkit
   echo_with_bold_cyan "❯❯❯  Downloading and extracting Apache NiFi ${NIFI_VERSION}"
   eval "${download_cmd} https://archive.apache.org/dist/nifi/${NIFI_VERSION}/nifi-${NIFI_VERSION}-bin.zip"
-  unzip -q nifi-${NIFI_VERSION}-bin.zip -d ${NIFI_INSTALL_PATH}/
+  unzip -q nifi-${NIFI_VERSION}-bin.zip -d ${NIFI_INSTALL_PATH_ARG}/
   echo_with_bold_cyan "❯❯❯  Downloading and extracting Apache NiFi Registry ${NIFI_VERSION}"
   eval "${download_cmd} https://archive.apache.org/dist/nifi/$NIFI_VERSION/nifi-registry-${NIFI_VERSION}-bin.zip"
-  unzip -q nifi-registry-${NIFI_VERSION}-bin.zip -d ${NIFI_INSTALL_PATH}/
+  unzip -q nifi-registry-${NIFI_VERSION}-bin.zip -d ${NIFI_INSTALL_PATH_ARG}/
   echo_with_bold_cyan "❯❯❯  Downloading and extracting Apache NiFi Toolkit ${NIFI_VERSION}"
   eval "${download_cmd} https://archive.apache.org/dist/nifi/$NIFI_VERSION/nifi-toolkit-${NIFI_VERSION}-bin.zip"
-  unzip -q nifi-toolkit-${NIFI_VERSION}-bin.zip -d ${NIFI_INSTALL_PATH}/
+  unzip -q nifi-toolkit-${NIFI_VERSION}-bin.zip -d ${NIFI_INSTALL_PATH_ARG}/
   # Removing temp dir
   cd ~ && rm -rf ${dir_path}
   # Updating envinroment variables
@@ -125,16 +149,16 @@ if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
   printf "\n" >> ~/.profile
   # Adding new environment variables
   echo "export NIFI_VERSION=${NIFI_VERSION}" >> ~/.profile
-  echo "export NIFI_HOME=${NIFI_INSTALL_PATH}/nifi-${NIFI_VERSION}" >> ~/.profile
-  echo "export NIFI_REGISTRY_HOME=${NIFI_INSTALL_PATH}/nifi-registry-${NIFI_VERSION}" >> ~/.profile
-  echo "export NIFI_TOOLKIT_HOME=${NIFI_INSTALL_PATH}/nifi-toolkit-${NIFI_VERSION}" >> ~/.profile
-  echo "export NIFI_BOOTSTRAP_FILE=${NIFI_INSTALL_PATH}/nifi-${NIFI_VERSION}/bootstrap.conf" >> ~/.profile
-  echo "export NIFI_PROPS_FILE=${NIFI_INSTALL_PATH}/nifi-${NIFI_VERSION}/conf/nifi.properties" >> ~/.profile
-  echo "export NIFI_REGISTRY_PROPS_FILE=${NIFI_INSTALL_PATH}/nifi-registry-${NIFI_VERSION}/conf/nifi-registry.properties" >> ~/.profile
-  echo "export NIFI_TOOLKIT_PROPS_FILE=${NIFI_INSTALL_PATH}/nifi-toolkit-${NIFI_VERSION}/conf/cli.properties" >> ~/.profile
+  echo "export NIFI_HOME=${NIFI_INSTALL_PATH_ARG}/nifi-${NIFI_VERSION}" >> ~/.profile
+  echo "export NIFI_REGISTRY_HOME=${NIFI_INSTALL_PATH_ARG}/nifi-registry-${NIFI_VERSION}" >> ~/.profile
+  echo "export NIFI_TOOLKIT_HOME=${NIFI_INSTALL_PATH_ARG}/nifi-toolkit-${NIFI_VERSION}" >> ~/.profile
+  echo "export NIFI_BOOTSTRAP_FILE=${NIFI_INSTALL_PATH_ARG}/nifi-${NIFI_VERSION}/bootstrap.conf" >> ~/.profile
+  echo "export NIFI_PROPS_FILE=${NIFI_INSTALL_PATH_ARG}/nifi-${NIFI_VERSION}/conf/nifi.properties" >> ~/.profile
+  echo "export NIFI_REGISTRY_PROPS_FILE=${NIFI_INSTALL_PATH_ARG}/nifi-registry-${NIFI_VERSION}/conf/nifi-registry.properties" >> ~/.profile
+  echo "export NIFI_TOOLKIT_PROPS_FILE=${NIFI_INSTALL_PATH_ARG}/nifi-toolkit-${NIFI_VERSION}/conf/cli.properties" >> ~/.profile
 
-  NIFI_INPUT="${NIFI_INSTALL_PATH}/nifi-${NIFI_VERSION}/input"
-  NIFI_OUTPUT="${NIFI_INSTALL_PATH}/nifi-${NIFI_VERSION}/output"
+  NIFI_INPUT="${NIFI_INSTALL_PATH_ARG}/nifi-${NIFI_VERSION}/input"
+  NIFI_OUTPUT="${NIFI_INSTALL_PATH_ARG}/nifi-${NIFI_VERSION}/output"
 
 
   echo "export NIFI_INPUT=${NIFI_INPUT}" >> ~/.profile
@@ -183,7 +207,7 @@ if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
   echo "alias NIFI_REGISTRY_RESTART=\"$NIFI_REGISTRY_HOME/bin/nifi-registry.sh restart\"" >> ~/.bashrc
   echo "alias NIFI_REGISTRY_STATUS=\"$NIFI_REGISTRY_HOME/bin/nifi-registry.sh status\"" >> ~/.bashrc
   printf "\n" >> ~/.bashrc
-
+  source ~/.bashrc
   # Updating NiFi bootstrap.conf settings
   nifi_bootstrap_filename="$NIFI_HOME/conf/bootstrap.conf"
   echo_with_bold_cyan "❯❯❯  Updating NiFi bootstrap.conf (${nifi_bootstrap_filename})"
@@ -240,29 +264,19 @@ if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
   # Change sensitive key
   eval "$NIFI_HOME/bin/nifi.sh set-sensitive-properties-key ${nifi_sensitive_key} &> /dev/null"
   echo_with_italics "Updated setting 'nifi.sensitive.props.key' to value '${nifi_sensitive_key}'"
-  if [ -v ${NIFI_LOGIN+x} ]; then
-    NIFI_LOGIN="nifi"
-    echo_with_italics "NiFi user login not set, '${NIFI_LOGIN}' will be used instead"
-  else
-    echo_with_italics "NiFi user login set to ${NIFI_LOGIN}"
-  fi
 
-  if [ -v ${NIFI_PASSWORD+x} ]; then
-    NIFI_PASSWORD="nifi_password"
-    echo_with_italics "NiFi user password not set, '${NIFI_PASSWORD}' will be used instead"
-  else
-    echo_with_italics "NiFi user passsword set to ${NIFI_PASSWORD}"
-  fi
-  eval "$NIFI_HOME/bin/nifi.sh set-single-user-credentials ${NIFI_LOGIN} ${NIFI_PASSWORD} &> /dev/null"
+
+
+  eval "$NIFI_HOME/bin/nifi.sh set-single-user-credentials ${NIFI_LOGIN_ARG} ${NIFI_PASSWORD_ARG} &> /dev/null"
+  kmax=150
   # Start NiFi and wait
-  eval "$NIFI_HOME/bin/nifi.sh start &> /dev/null"
+  eval "NIFI_START &> /dev/null"
   echo -n "Waiting for NiFi start ..."
   k=1
-  kmax=150
   nifi_web_interface_link=""
   while [[ $k -le $kmax ]] && [[ "$nifi_web_interface_link" = "" ]]
   do
-          nifi_web_interface_link=$(grep "Started Server on" nifi-app*.log | tail -1 | grep -Eo '(http|https)://[^/"]+')
+          nifi_web_interface_link=$(grep "Started Server on" $NIFI_HOME/logs/nifi-app.log 2> /dev/null | tail -1 | grep -Eo '(http|https)://[^/"]+/nifi')
           echo -n '.'
           ((k=k+1))
           sleep 1
@@ -270,11 +284,32 @@ if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
   printf "\n"
   if [ "$k" -le $kmax ]; then
       echo_with_bold_cyan "❯❯❯  NiFi started at ${nifi_web_interface_link}/nifi/"
+      nohup xdg-open "$nifi_web_interface_link" &> /dev/null &
     else
       echo_with_bold_red "ERROR, NiFi not started"
   fi
+  # Start NiFi Registry and wait
+  eval "NIFI_REGISTRY_START &> /dev/null"
+  echo -n "Waiting for NiFi Registry start ..."
+  k=1
+  nifi_web_interface_link=""
+  while [[ $k -le $kmax ]] && [[ "$nifi_web_interface_link" = "" ]]
+  do
+          nifi_web_interface_link=$(grep "Started Server on" $NIFI_REGISTRY_HOME/logs/nifi-registry-app.log 2> /dev/null | tail -1 | grep -Eo '(http|https)://[^/"]+/nifi-registry')
+          echo -n '.'
+          ((k=k+1))
+          sleep 1
+  done
+  printf "\n"
+  if [ "$k" -le $kmax ]; then
+      echo_with_bold_cyan "❯❯❯  NiFi Registry started at ${nifi_web_interface_link}/nifi/"
+      nohup xdg-open "$nifi_web_interface_link" &> /dev/null &
+    else
+      echo_with_bold_red "ERROR, NiFi Registry not started"
+  fi
+  # Restoring saved working dir
+  popd
   exec bash
-  #echo "To get the username and password use the command: grep Generated $NIFI_HOME/logs/nifi-app*log"
 else
   echo_with_bold_red "ERROR, passed NiFi version does not match the version regex"
 fi
