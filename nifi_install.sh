@@ -25,6 +25,10 @@ prop_update(){
   echo "end"
 }
 
+command_exists() {
+  command -v "${1}" > /dev/null 2>& 1
+}
+
 uncomment() {
   echo "Uncommenting $2"
   sed -i -e "s|^\#$1|$1|" $2
@@ -85,15 +89,14 @@ VERSION_REGEX="^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
 if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
 
   # Selecting download command
-  if ! command -v aria2c &> /dev/null
-  then
+  if ! command_exists aria2c; then
     echo "aria2c is not installed, wget will be used for downloads"
   else
     echo "aria2c is installed and will be used for downloads"
     download_cmd="aria2c -x${download_threads_count} --summary-interval=0"
   fi
   # Saving current work dir
-  pushd -n $(pwd)
+  pushd -n $(pwd) > /dev/null
   # Creating temp work dir
   dir_path="$HOME/$(uuidgen)"
   mkdir ${dir_path} && cd ${dir_path}
@@ -308,7 +311,7 @@ if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
       echo_with_bold_red "ERROR, NiFi Registry not started"
   fi
   # Restoring saved working dir
-  popd
+  popd > /dev/null
   exec bash
 else
   echo_with_bold_red "ERROR, passed NiFi version does not match the version regex"
