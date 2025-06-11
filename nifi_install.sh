@@ -1,6 +1,15 @@
-#!/bin/bash -i
+#!/usr/bin/env bash
+
+# A pretty simple solution is to start an interactive shell and redirect your script file to the input stream:
+# bash -i </path/to/script-file
 
 [ -n "$BASH_VERSION" ] || { echo "Please run this script with bash"; exit 1; }
+
+if [ -z "$PS1" ]; then
+        echo This shell is not interactive
+else
+        echo This shell is interactive
+fi
 
 source 'bash_color.sh'
 
@@ -39,6 +48,23 @@ generate_random_string() {
   openssl rand -base64 "$((length * 3 / 4 + 1))" | tr -dc A-Za-z0-9_ | head -c "$length"
 }
 
+remove_alias() {
+	alias=${1}
+	target_file=${2:-~/.bashrc}
+	echo "Removing alias ${alias} from ${target_file}"
+	sed -i "/^alias ${alias}=/d" "${target_file}"
+}
+
+is_alias() {
+	if [[ "$(type -t $1)" = "alias" ]]; then
+		#echo "Alias exists $1"	
+		return 0
+	else
+		#echo "Alias not exists $1"
+		return 1
+	fi
+}
+
 log() { echo  $(date "+%Y-%m-%d %H:%m:%S") $1; }
 log_info() { log "INFO: $1"; }
 log_error() { log "ERROR: $1"; exit 1; }
@@ -71,7 +97,7 @@ if [ -v ${NIFI_LOGIN_ARG+x} ]; then
   NIFI_LOGIN_ARG="nifi"
   echo_with_italics "NiFi user login not set, '${NIFI_LOGIN_ARG}' will be used instead"
 else
-  echo_with_italics "NiFi user login wiil be set to ${NIFI_LOGIN_ARG}"
+  echo_with_italics "NiFi user login will be set to ${NIFI_LOGIN_ARG}"
 fi
 
 if [ -v ${NIFI_PASSWORD_ARG+x} ]; then
@@ -163,54 +189,59 @@ if [[ "$NIFI_VERSION" =~ $VERSION_REGEX ]]; then
   NIFI_INPUT="${NIFI_INSTALL_PATH_ARG}/nifi-${NIFI_VERSION}/input"
   NIFI_OUTPUT="${NIFI_INSTALL_PATH_ARG}/nifi-${NIFI_VERSION}/output"
 
-
   echo "export NIFI_INPUT=${NIFI_INPUT}" >> ~/.profile
   echo "export NIFI_OUTPUT=${NIFI_OUTPUT}" >> ~/.profile
   mkdir -p ${NIFI_INPUT} ${NIFI_OUTPUT}
-
   printf "\n" >> ~/.profile
+
   source ~/.profile
+  
   # Updating aliases for commands (for case when NiFi and NiFi Registry are not installed as a service)
   echo_with_bold_cyan "❯❯❯  Adding aliases for commands"
   . ~/.bashrc
-  # Removing existed NiFi command aliases
-  if [[ "$(type -t NIFI_START)" -eq "alias" ]]; then
-    sed -i '/^alias NIFI_START/d' ~/.bashrc;
+  # Removing existed NiFi aliases
+  if is_alias "NIFI_START"; then
+    remove_alias "NIFI_START"
   fi
-  if [[ "$(type -t NIFI_STOP)" -eq "alias" ]]; then
-    sed -i '/^alias NIFI_STOP/d' ~/.bashrc;
+  if is_alias "NIFI_STOP"; then
+    remove_alias "NIFI_STOP"
   fi
-  if [[ "$(type -t NIFI_RESTART)" -eq "alias" ]]; then
-    sed -i '/^alias NIFI_RESTART/d' ~/.bashrc;
+  if is_alias "NIFI_RESTART"; then
+    remove_alias "NIFI_RESTART"
   fi
-  if [[ "$(type -t NIFI_STATUS)" -eq "alias" ]]; then
-    sed -i '/^alias NIFI_STATUS/d' ~/.bashrc;
-  fi
+  if is_alias "NIFI_STATUS"; then
+    remove_alias "NIFI_STATUS"
+  fi    
   printf "\n" >> ~/.bashrc
-  # Adding new command aliases
+  # Adding new NiFi aliases
   echo "alias NIFI_START=\"$NIFI_HOME/bin/nifi.sh start\"" >> ~/.bashrc
   echo "alias NIFI_STOP=\"$NIFI_HOME/bin/nifi.sh stop\"" >> ~/.bashrc
   echo "alias NIFI_RESTART=\"$NIFI_HOME/bin/nifi.sh restart\"" >> ~/.bashrc
   echo "alias NIFI_STATUS=\"$NIFI_HOME/bin/nifi.sh status\"" >> ~/.bashrc
-  if [[ "$(type -t NIFI_REGISTRY_START)" -eq "alias" ]]; then
-    sed -i '/^alias NIFI_REGISTRY_START/d' ~/.bashrc;
-  fi
-  if [[ "$(type -t NIFI_REGISTRY_STOP)" -eq "alias" ]]; then
-    sed -i '/^alias NIFI_REGISTRY_STOP/d' ~/.bashrc;
-  fi
-  if [[ "$(type -t NIFI_REGISTRY_RESTART)" -eq "alias" ]]; then
-    sed -i '/^alias NIFI_REGISTRY_RESTART/d' ~/.bashrc;
-  fi
-  if [[ "$(type -t NIFI_REGISTRY_STATUS)" -eq "alias" ]]; then
-    sed -i '/^alias NIFI_REGISTRY_STATUS/d' ~/.bashrc;
-  fi
   printf "\n" >> ~/.bashrc
+
+  # Removing existed NiFi Registry aliases
+  if is_alias "NIFI_REGISTRY_START"; then
+    remove_alias "NIFI_REGISTRY_START"
+  fi  
+  if is_alias "NIFI_REGISTRY_STOP"; then
+    remove_alias "NIFI_REGISTRY_STOP"
+  fi  
+  if is_alias "NIFI_REGISTRY_RESTART"; then
+    remove_alias "NIFI_REGISTRY_RESTART"
+  fi  
+  if is_alias "NIFI_REGISTRY_STATUS"; then
+    remove_alias "NIFI_REGISTRY_STATUS"
+  fi  
+  # Adding new NiFi Registry aliases
   echo "alias NIFI_REGISTRY_START=\"$NIFI_REGISTRY_HOME/bin/nifi-registry.sh start\"" >> ~/.bashrc
   echo "alias NIFI_REGISTRY_STOP=\"$NIFI_REGISTRY_HOME/bin/nifi-registry.sh stop\"" >> ~/.bashrc
   echo "alias NIFI_REGISTRY_RESTART=\"$NIFI_REGISTRY_HOME/bin/nifi-registry.sh restart\"" >> ~/.bashrc
   echo "alias NIFI_REGISTRY_STATUS=\"$NIFI_REGISTRY_HOME/bin/nifi-registry.sh status\"" >> ~/.bashrc
   printf "\n" >> ~/.bashrc
+  
   source ~/.bashrc
+  
   # Updating NiFi bootstrap.conf settings
   nifi_bootstrap_filename="$NIFI_HOME/conf/bootstrap.conf"
   echo_with_bold_cyan "❯❯❯  Updating NiFi bootstrap.conf (${nifi_bootstrap_filename})"
