@@ -155,29 +155,42 @@ find_java_installation() {
 }
 
 
-if [[ $- == *i* ]]; then
-    echo "This shell is interactive"
-    java_check=$(check_java_installation "$JAVA_HOME")
-    if [ -n "$java_check" ]; then
-        echo "$java_check"
-    else
-        echo "Failed to check JAVA_HOME. Trying to find java installation"
-        if find_java_installation; then
-            echo "Java successfully found and configured" >&2
-            echo "Do you want to save JAVA_HOME to ~/.profile? (y/n)"
-            read -r response
-            if [[ "$response" =~ ^[Yy]$ ]]; then
-                remove_env_variable "JAVA_HOME" ~/.profile
-                echo "export JAVA_HOME=${JAVA_HOME}" >> ~/.profile
-                echo "JAVA_HOME has been saved to ~/.profile"
-                echo "Please run 'source ~/.profile' or restart your terminal to apply changes"
-            fi
+
+
+
+
+
+main() {
+    if [[ $- == *i* ]]; then
+        echo "This shell is interactive"
+        if check_java_installation "$JAVA_HOME"; then
+            echo "Java is properly configured" >&2
         else
-            exit 1
+            echo "JAVA_HOME is not properly configured. Trying to find java installation..." >&2
+            if find_java_installation; then
+                echo "Java successfully found and configured" >&2
+                echo "Do you want to save JAVA_HOME to ~/.profile? (y/n)"
+                read -r response
+                if [[ "$response" =~ ^[Yy]$ ]]; then
+                    remove_env_variable "JAVA_HOME" ~/.profile
+                    echo "export JAVA_HOME=${JAVA_HOME}" >> ~/.profile
+                    echo "JAVA_HOME has been saved to ~/.profile"
+                    echo "Please run 'source ~/.profile' or restart your terminal to apply changes"
+                fi
+            else
+                exit 1
+            fi
         fi
+    else
+        echo "This shell is not interactive"
+        echo "For correct operation, please run the script as: bash -i $(basename "$0")"
+        exit 1
     fi
-else
-    echo "This shell is not interactive"
-    echo "For correct operation, please run the script as: bash -i $(basename "$0")"
-    exit 1
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
 fi
+
+
+
