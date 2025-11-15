@@ -4,7 +4,7 @@
 [![license](https://img.shields.io/badge/licence-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 
-This project contains some Bash scripts created for making the life easier.
+This project contains some useful bash scripts created for making the life easier.
 
 ## Description
 
@@ -20,7 +20,7 @@ Accepts args:
 
 Make sure your password is at least 12 characters long.
 
-The version may not be specified, in which case the latest version will be installed
+The version may not be specified, in which case the latest version will be installed.
 
 Adds environment variables: 
   1. `NIFI_VERSION`
@@ -47,11 +47,14 @@ If the specified environment variables or command aliases already exist, they ar
 
 Running in interactive mode is required to correctly detect existing aliases.
 
+Keep in mind that the minimum password length is 12 characters.
+
 ### nifi_setup
 Script for apply recommended system settings for Apache NiFi described in [Apache NiFi Development Quickstart](https://en.wikipedia.org/wiki/ARTag). Requires root rights.
 
 ### check_java
 Script to check if JDK is installed and JAVA_HOME environment variable is correct. Does not require root rights.
+If the JAVA_HOME is incorrect, the script will attempt to determine the correct path and offer to save it in environment variables.
 
 ### git_config
 Script to configure git options such as username, email, credentials and aliases.
@@ -62,12 +65,12 @@ Script to download files from Google Drive with wget. Arguments file ID and outp
 ### bash_color
 Script for formatting text output (setting color, background, style).
 
-## Usage
+## 🚀 Quick start
 
 Most of the files are intended to be placed in ~/bin, which is included in the PATH variable by default in most Unix systems.
 Make scripts executable by this command: `chmod +x <filename>`.
 
-## Contributing
+## 🤝 Contributing
 
 If you want to contribute, please follow these steps:
 
@@ -76,6 +79,6 @@ If you want to contribute, please follow these steps:
 3. Make your changes and commit them.
 4. Push to your fork and create a pull request.
 
-## License
+## 📝 License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
