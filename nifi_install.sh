@@ -314,6 +314,7 @@ if [[ $- == *i* ]]; then
                 done
                 printf "\n"
                 if [ "$t" -le $max_timeout_sec ]; then
+                    nifi_web_interface_link="${nifi_web_interface_link/0.0.0.0/127.0.0.1}"
                     echo_with_bold_cyan "❯❯❯  NiFi started at ${nifi_web_interface_link}/nifi/"
                     nohup xdg-open "$nifi_web_interface_link" &> /dev/null &
                     # If NiFi started succesfully then start NiFi Registry
@@ -331,6 +332,7 @@ if [[ $- == *i* ]]; then
                         done
                         printf "\n"
                         if [ "$t" -le $max_timeout_sec ]; then
+                            nifi_web_interface_link="${nifi_web_interface_link/0.0.0.0/127.0.0.1}"
                             echo_with_bold_cyan "❯❯❯  NiFi Registry started at ${nifi_web_interface_link}/nifi/"
                             nohup xdg-open "$nifi_web_interface_link" &> /dev/null &
                         else
