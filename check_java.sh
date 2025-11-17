@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 [ -n "$BASH_VERSION" ] || { echo "Please run this script with bash"; exit 1; }
 
@@ -153,12 +153,6 @@ find_java_installation() {
         return 1
     fi
 }
-
-
-
-
-
-
 
 main() {
     if [[ $- == *i* ]]; then

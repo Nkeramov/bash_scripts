@@ -1,6 +1,7 @@
-#!/bin/bash -i
+#!/usr/bin/env bash
 
-[ -n "$BASH_VERSION" ] || { echo "please run this script with bash"; exit 1; }
+[ -n "$BASH_VERSION" ] || { echo "Please run this script with bash"; exit 1; }
+
 
 echo_with_red_color() {
   echo -e '\e[1;31m'$1'\e[m';

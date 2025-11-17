@@ -1,6 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 [ -n "$BASH_VERSION" ] || { echo "Please run this script with bash"; exit 1; }
+
 
 if [ "$(id -u)" != 0 ]; then
   echo "This script must be run as root"

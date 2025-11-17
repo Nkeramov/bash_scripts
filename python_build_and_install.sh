@@ -1,4 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+[ -n "$BASH_VERSION" ] || { echo "Please run this script with bash"; exit 1; }
+
 
 # Saving current work dir
 pushd -n $(pwd) > /dev/null
