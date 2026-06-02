@@ -1,44 +1,8 @@
 #!/usr/bin/env bash
 
-[ -n "$BASH_VERSION" ] || { echo "Please run this script with bash"; exit 1; }
+source "$(dirname "${BASH_SOURCE[0]}")/utils.sh"
 
-
-remove_env_variable() {
-  local var_name="$1"
-  local file=${2:-~/.profile}
-  if [[ -v "${var_name}" || -n "${!var_name+x}" ]]; then
-    sed -i "/^export ${var_name}=/d" "$file"
-    sed -i "/^export ${var_name}\$/d" "$file"
-  fi
-}
-
-
-get_real_path() {
-    local path="$1"
-    if [ -z "$path" ]; then
-        return 1
-    fi
-    if command -v readlink > /dev/null 2>&1; then
-        local real_path
-        if real_path=$(readlink -f "$path" 2>/dev/null); then
-            GET_REAL_PATH_RESULT="$real_path"
-            return 0
-        fi
-    fi
-    if [ -L "$path" ]; then
-        local link_target
-        link_target=$(ls -l "$path" | awk '{print $NF}')
-        if [ "${link_target:0:1}" = "/" ]; then
-            GET_REAL_PATH_RESULT="$link_target"
-        else
-            GET_REAL_PATH_RESULT="$(dirname "$path")/$link_target"
-        fi
-    else
-        GET_REAL_PATH_RESULT="$path"
-    fi
-    return 0
-}
-
+require_bash
 
 check_java_installation() {
     echo "Checking Java installation..." >&2
@@ -154,37 +118,25 @@ find_java_installation() {
     fi
 }
 
-main() {
-    if [[ $- == *i* ]]; then
-        echo "This shell is interactive"
-        if check_java_installation "$JAVA_HOME"; then
-            echo "Java is properly configured" >&2
-        else
-            echo "JAVA_HOME is not properly configured. Trying to find java installation..." >&2
-            if find_java_installation; then
-                echo "Java successfully found and configured" >&2
-                echo "Do you want to save JAVA_HOME to ~/.profile? (y/n)"
-                read -r response
-                if [[ "$response" =~ ^[Yy]$ ]]; then
-                    remove_env_variable "JAVA_HOME" ~/.profile
-                    echo "export JAVA_HOME=${JAVA_HOME}" >> ~/.profile
-                    echo "JAVA_HOME has been saved to ~/.profile"
-                    echo "Please run 'source ~/.profile' or restart your terminal to apply changes"
-                fi
-            else
-                exit 1
-            fi
-        fi
-    else
-        echo "This shell is not interactive"
-        echo "For correct operation, please run the script as: bash -i $(basename "$0")"
-        exit 1
-    fi
-}
-
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
+    require_interactive_shell
+
+    if check_java_installation "$JAVA_HOME"; then
+        echo "Java is properly configured" >&2
+    else
+        echo "JAVA_HOME is not properly configured. Trying to find java installation..." >&2
+        if find_java_installation; then
+            echo "Java successfully found and configured" >&2
+            echo "Do you want to save JAVA_HOME to ~/.profile? (y/n)"
+            read -r response
+            if [[ "$response" =~ ^[Yy]$ ]]; then
+                remove_env_variable "JAVA_HOME" ~/.profile
+                echo "export JAVA_HOME=${JAVA_HOME}" >> ~/.profile
+                echo "JAVA_HOME has been saved to ~/.profile"
+                echo "Please run 'source ~/.profile' or restart your terminal to apply changes"
+            fi
+        else
+            exit 1
+        fi
+    fi
 fi
-
-
-
