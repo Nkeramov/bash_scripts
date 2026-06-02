@@ -35,19 +35,3 @@ que(){ printf -v _N %$1s; _N=(${_N// / 1}); printf "${!_N[*]}"; }   #|
 # loops are better on large scales like 20000+ but fail on 1000 or less
 # line(){ for ((i=0; i<$2; i++)); { printf -- '%s' "$1"; }
 # que(){ printf 0; for ((i=1; i<$1; i++)); { printf -- " %s" $i; }
-
-echo_with_bold () {
-  echo -e $BLD$1$DEF
-}
-
-echo_with_italics () {
-  echo -e $CUR$1$DEF
-}
-
-echo_with_bold_cyan () {
-  echo -e $CYN$BLD$1$DEF
-}
-
-echo_with_bold_red () {
-  echo -e $RED$BLD$1$DEF
-}
